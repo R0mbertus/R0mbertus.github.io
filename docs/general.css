@@ -1,0 +1,79 @@
+/* ====================
+    Document setup
+==================== */
+
+* {
+    cursor: url(images/flame\ sword.cur), auto !important;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    height: max(96vh);
+    width: 100%;
+
+    background-image: url(images/backgrounds/background.gif);
+}
+
+
+
+/* ====================
+    Main Window
+==================== */
+
+.main {
+    height: 100%;
+    width: min(1280px, 98vw);
+    margin: max(12px, 2vh) auto;
+    gap: max(8px, 1vh);
+
+    display: flex;
+    flex-direction: column;
+}
+
+.header {
+    display: flex;
+    justify-content: center;
+}
+
+.header img {
+    min-width: min(90%, 490px);
+}
+
+
+.window {
+    width: 100%;
+    height: 100%;
+
+    background-color: beige;
+    font-family: ms gothic, courier;
+    font-size: medium;
+}
+
+.title-bar {
+    font-weight: bold;
+    background: linear-gradient(90deg, rgb(3, 90, 0), #111111);
+}
+
+.title-bar-text {
+    padding-left: 8px;
+    font-size: 24px;
+}
+
+.title-bar-controls button {
+    background: white;
+    display: block;
+
+    min-width: 24px;
+    min-height: 22px;
+}
+
+.title-bar-controls {}
+
+.window-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
