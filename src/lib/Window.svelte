@@ -7,6 +7,9 @@
     import minimize from "$lib/assets/icons/minimize.svg";
     import maximize from "$lib/assets/icons/maximize.svg";
     import close from "$lib/assets/icons/close.svg";
+    import home from "$lib/assets/icons/home.svg";
+
+    import Clock from "$lib/Clock.svelte";
 </script>
 
 <style>
@@ -14,8 +17,10 @@
         --white:#F5F5F5;
         --white-select: #E0E0E0;
         --black: #111111;
+        --gray: #5c5c5c;
 
         --taskbar-height: 2.5em;
+        --header-height: 5em;
     }
 
     .main {
@@ -24,9 +29,16 @@
         
         height: 100%;
         width: 100%;
+
+        display: flex;
+        flex-direction: column;
     }
 
     .content {
+        box-sizing: padding-box;
+        -moz-box-sizing: padding-box;
+        -webkit-box-sizing: padding-box;
+
         height: calc(100% - var(--taskbar-height));
         width: min(1280px, 98vw);
         gap: max(8px, 1vh);
@@ -42,22 +54,26 @@
     .header {
         display: flex;
         justify-content: center;
+        align-items: center;
+
+        height: var(--header-height);
     }
 
-    .header img {
-        max-width: min(90%, 600px);
+    .header > img {
+        height: 96%;
     }
 
     /* window */
 
     .window {
         width: 100%;
-        height: 90%;
+        height: calc(100% - var(--header-height));
         padding: 2px;
 
         background-color: var(--white);
         font-family: ms gothic, courier;
         font-size: medium;
+        overflow: hidden;
     }
 
     .title-bar {
@@ -103,8 +119,9 @@
     }
 
     .window-body {
+        height: calc(100% - 26px);
         padding: 8px;
-        overflow: auto;
+        overflow-y: scroll;
     }
 
     /* Taskbar */
@@ -120,9 +137,60 @@
         align-items: center;
     }
 
-    .taskbar img {
+    .left-icons, .right-icons {
+        height: 100%;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 0 10px;
+    }
+
+    .left-icons > img {
         padding-left: 8px;
         height: 85%;
+    }
+
+    .divider {
+        width: 1px;
+        height: 80%;
+        background-color: var(--gray);
+    }
+
+    .windows {
+        height: 100%;
+        width: 100%;
+        gap: 8px;
+
+        display: flex;
+        align-items: center;
+
+    }
+
+    .windows > button {
+        width: 12%;
+        height: 85%;
+
+        background-color: var(--black);
+        color: var(--white);
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0 4px;
+    }
+
+    .windows > button:hover {
+        background-color: var(--white);
+        color: var(--black);
+    }
+
+    .windows > button:active {
+        background-color: #000000;
+        color: var(--white);
+    }
+
+    .windows > button > img {
+        height: 80%;
     }
 </style>
 
@@ -134,9 +202,7 @@
 <div class="main">
     <div class="content">
     <div class="header">
-        <div class="header">
-            <img src="{rombertus}" alt="Rombertus" />
-        </div>
+        <img src="{rombertus}" alt="Rombertus" />
     </div>
     <div class="window">
         <div class="title-bar">
@@ -162,8 +228,24 @@
     </div>
 
     <div class="taskbar">
-        <img src="{r_icon}" alt="R icon">
+        <div class="left-icons">
+            <img src="{r_icon}" alt="R icon">
+            <div class="divider"></div>
+        </div>
+        
+        <div class="windows">
+            <button>
+                <img src="{home}" alt="R icon">
+                <p>Home Page</p>
+                <div></div>
+            </button>
+            <button></button>
+        </div>
 
+        <div class="right-icons">
+            <div class="divider"></div>
+            <Clock />
+        </div>
     </div>
 </div>
 
