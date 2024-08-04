@@ -1,15 +1,28 @@
 <script>
-    export let title = 'Home page';
+    import {onMount} from "svelte";
+
+    export let title = '';
 
     import rombertus from "$lib/assets/images/rombertus.gif";
     import r_icon from "$lib/assets/icons/r-icon.gif";
 
-    import minimize from "$lib/assets/icons/minimize.svg";
-    import maximize from "$lib/assets/icons/maximize.svg";
     import close from "$lib/assets/icons/close.svg";
-    import home from "$lib/assets/icons/home.svg";
 
-    import Clock from "$lib/Clock.svelte";
+
+    onMount(() => {
+        const url = new URL(window.location.href);
+        const buttons = document.getElementsByClassName('nav-button');
+
+        console.log(buttons)
+
+        for (const button of buttons) {
+            console.log(button)
+            if (button.parentElement?.getAttribute("href") === url.pathname) {
+                button.style.borderStyle = "inset"
+                button.style.backgroundColor = "var(--white-select)"
+            }
+        }
+    });
 </script>
 
 <style>
@@ -17,10 +30,11 @@
         --white:#F5F5F5;
         --white-select: #E0E0E0;
         --black: #111111;
+        --light-gray: #D3D3D3;
         --gray: #5c5c5c;
 
-        --taskbar-height: 2.5em;
         --header-height: 5em;
+        --title-height: 26px;
     }
 
     .main {
@@ -35,15 +49,11 @@
     }
 
     .content {
-        box-sizing: padding-box;
-        -moz-box-sizing: padding-box;
-        -webkit-box-sizing: padding-box;
-
-        height: calc(100% - var(--taskbar-height));
+        height: 100%;
         width: min(1280px, 98vw);
         gap: max(8px, 1vh);
         margin: 0 auto;
-        padding: 8px 0;
+        padding-top: 8px;
 
         display: flex;
         flex-direction: column;
@@ -65,9 +75,17 @@
 
     /* window */
 
-    .window {
+    .windows {  
+        height: calc(100% - var(--header-height) - 1em);
+        padding-bottom: 8px;
+        gap: 8px;
+        display: flex;
+
         width: 100%;
-        height: calc(100% - var(--header-height));
+    }
+
+    .window {
+        height: 100%;
         padding: 2px;
 
         background-color: var(--white);
@@ -76,12 +94,55 @@
         overflow: hidden;
     }
 
+    #content-window {
+        order: 2;
+        width: 75%;
+    }
+
+    #nav-window {
+        order: 1;
+        width: 25%;
+    }
+
+    .window-body {
+        height: calc(100% - 26px);
+        padding: 8px;
+        overflow-y: scroll;
+    }
+
+    #nav-window .window-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+    }
+
+    #nav-window .buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    #nav-window .nav-button {
+        width: 100%;
+        height: 32px;
+
+        background-color: var(--white);
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    #nav-window .nav-button:hover {
+        background-color: var(--white-select);
+    }
+
     .title-bar {
         font-weight: bold;
         color: var(--white);
 
         background: linear-gradient(90deg, rgb(4, 129, 0), var(--black));
-        height: 26px;
+        height: var(--title-height);
 
         display: flex;
         justify-content: space-between;
@@ -90,7 +151,7 @@
 
     .title-bar-text {
         padding-left: 8px;
-        padding-top: 2px;
+        padding-top: 5px;
         font-size: 24px;
     }
 
@@ -118,79 +179,17 @@
         height: 16px;
     }
 
-    .window-body {
-        height: calc(100% - 26px);
-        padding: 8px;
-        overflow-y: scroll;
-    }
+    @media (max-width: 820px) {
+        .windows {
+            flex-direction: column;
+            height: max(fit-content, 100%);
+        }
 
-    /* Taskbar */
+        /* TODO: fix nav window height */
 
-    .taskbar {
-        height: var(--taskbar-height);
-        width: 100%;
-
-        background-color: var(--black);
-
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .left-icons, .right-icons {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        padding: 0 10px;
-    }
-
-    .left-icons > img {
-        padding-left: 8px;
-        height: 85%;
-    }
-
-    .divider {
-        width: 1px;
-        height: 80%;
-        background-color: var(--gray);
-    }
-
-    .windows {
-        height: 100%;
-        width: 100%;
-        gap: 8px;
-
-        display: flex;
-        align-items: center;
-
-    }
-
-    .windows > button {
-        width: 12%;
-        height: 85%;
-
-        background-color: var(--black);
-        color: var(--white);
-
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 4px;
-    }
-
-    .windows > button:hover {
-        background-color: var(--white);
-        color: var(--black);
-    }
-
-    .windows > button:active {
-        background-color: #000000;
-        color: var(--white);
-    }
-
-    .windows > button > img {
-        height: 80%;
+        .window {
+            width: 100% !important;
+        }
     }
 </style>
 
@@ -204,48 +203,42 @@
     <div class="header">
         <img src="{rombertus}" alt="Rombertus" />
     </div>
-    <div class="window">
-        <div class="title-bar">
-            <div class="title-bar-text">
-                {title}
+    <div class="windows">
+        <div class="window" id="content-window">
+            <div class="title-bar">
+                <div class="title-bar-text">
+                    {title}
+                </div>
+                <div class="title-bar-controls">
+                    <button class="Close">
+                        <img src="{close}" alt="Minimize" />
+                    </button>
+                </div>
             </div>
-            <div class="title-bar-controls">
-                <button class="Minimize">
-                    <img src="{minimize}" alt="Minimize" />
-                </button>
-                <button class="Maximize">
-                    <img src="{maximize}" alt="Minimize" />
-                </button>
-                <button class="Close">
-                    <img src="{close}" alt="Minimize" />
-                </button>
+            <div class="window-body">
+                <slot></slot>
             </div>
         </div>
-        <div class="window-body">
-            <slot></slot>
+        <div class="window" id="nav-window">
+            <div class="title-bar">
+                <div class="title-bar-text">
+                    Navigation
+                </div>
+                <div class="title-bar-controls">
+                    <button class="Close">
+                        <img src="{close}" alt="Minimize" />
+                    </button>
+                </div>
+            </div>
+            <div class="window-body">
+                <div class="buttons">
+                    <a href="/"><button class="nav-button">Home</button></a>
+                    <a href="/about"><button class="nav-button">About</button></a>
+                </div>
+                <div class="banners"></div>
+            </div>
         </div>
     </div>
-    </div>
-
-    <div class="taskbar">
-        <div class="left-icons">
-            <img src="{r_icon}" alt="R icon">
-            <div class="divider"></div>
-        </div>
-        
-        <div class="windows">
-            <button>
-                <img src="{home}" alt="R icon">
-                <p>Home Page</p>
-                <div></div>
-            </button>
-            <button></button>
-        </div>
-
-        <div class="right-icons">
-            <div class="divider"></div>
-            <Clock />
-        </div>
     </div>
 </div>
 
