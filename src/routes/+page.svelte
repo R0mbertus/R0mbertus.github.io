@@ -1,2 +1,11 @@
-<h1>Welcome to SvelteKit</h1>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<script>
+    import Window from '$lib/window.svelte';
+
+    import barraconstruction from '$lib/assets/images/barraconstruction.gif';
+</script>
+
+
+<Window title="Home page">
+    <img src="{barraconstruction}" alt="Under construction" />
+    <p>Under construction! Come back later</p>
+</Window>
