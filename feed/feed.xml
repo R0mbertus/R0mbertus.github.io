@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<?xml-stylesheet href="pretty-atom-feed.xsl" type="text/xsl"?>
+<feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
+  <title>Rombertus</title>
+  <subtitle>Rombertus !!!!</subtitle>
+  <link href="https://r0mbertus.github.io/eleventy-base-blog/feed/feed.xml" rel="self" />
+  <link href="https://r0mbertus.github.io/eleventy-base-blog/" />
+  <updated>2025-11-24T00:00:00Z</updated>
+  <id>https://r0mbertus.github.io/eleventy-base-blog/</id>
+  <author>
+    <name>Robert Klink</name>
+  </author>
+  <entry>
+    <title>Welcome!</title>
+    <link href="https://r0mbertus.github.io/eleventy-base-blog/blog/firstpost/" />
+    <updated>2025-11-24T00:00:00Z</updated>
+    <id>https://r0mbertus.github.io/eleventy-base-blog/blog/firstpost/</id>
+    <content type="html">&lt;p&gt;Hello hello hi hi&lt;/p&gt;
+</content>
+  </entry>
+</feed>
