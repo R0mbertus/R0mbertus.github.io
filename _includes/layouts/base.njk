@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="{{ metadata.language }}">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>{{ title or metadata.title }}</title>
+		<meta name="description" content="{{ description or metadata.description }}">
+		<link rel="alternate" href="/feed/feed.xml" type="application/atom+xml" title="{{ metadata.title }}">
+		<link rel="icon" href="{{ '/img/r-icon.gif' | url | replace('/content/', '/') }}" type="image/gif">
+
+		{#- Uncomment this if you’d like folks to know that you used Eleventy to build your site!  #}
+		{#- <meta name="generator" content="{{ eleventy.generator }}"> #}
+
+		{#-
+		Plain-text bundles are provided via the `eleventy-plugin-bundle` plugin:
+		1. CSS:
+			* Add to a per-page bundle using `{% css %}{% endcss %}`
+			* Retrieve bundle content using `{% getBundle "css" %}` or `{% getBundleFileUrl "css" %}`
+		2. Or for JavaScript:
+			* Add to a per-page bundle using `{% js %}{% endjs %}`
+			* Retrieve via `{% getBundle "js" %}` or `{% getBundleFileUrl "js" %}`
+		3. Learn more: https://github.com/11ty/eleventy-plugin-bundle
+		#}
+
+		<style>{% include "node_modules/98.css/dist/98.css" %}</style>
+		<style>{% include "css/index.css" %}</style>
+		<style>{% getBundle "css" %}</style>
+		<script type="module">{% include "node_modules/@zachleat/heading-anchors/heading-anchors.js" %}</script>
+	</head>
+	<body class="desktop">
+		<a href="#main" id="skip-link" class="visually-hidden">Skip to main content</a>
+
+		<div class="desktop-shell">
+			<header class="desktop-banner">
+				<a href="/" class="desktop-banner__logo">
+					<img src="{{ '/img/big-logo.gif' | url | replace('/content/', '/') }}" alt="{{ metadata.title }} logo" loading="lazy" decoding="async">
+				</a>
+			</header>
+
+			<div class="window site-window">
+				<div class="title-bar">
+					<div class="title-bar-text">{{ title or metadata.title }}</div>
+					<div class="title-bar-controls">
+						<button type="button" aria-label="Minimize"></button>
+						<button type="button" aria-label="Maximize" disabled></button>
+						<button type="button" aria-label="Close"></button>
+					</div>
+				</div>
+
+				<div class="window-body">
+					<main id="main" class="window-content">
+						<div class="sunken-panel content-panel">
+							<heading-anchors>
+								{{ content | safe }}
+							</heading-anchors>
+						</div>
+					</main>
+				</div>
+
+				<footer class="status-bar" role="contentinfo">
+					<p class="status-bar-field">
+						<em>Built with <a href="https://www.11ty.dev/">{{ eleventy.generator }}</a></em>
+					</p>
+				</footer>
+			</div>
+		</div>
+
+		{#- Taskbar navigation mimics the Windows 98 shell #}
+		<nav class="taskbar" aria-label="Taskbar">
+			<a href="/" class="taskbar__start">Start</a>
+			<ul class="taskbar__items">
+				{%- for entry in collections.all | eleventyNavigation %}
+					<li class="taskbar__item"><a class="taskbar__link" href="{{ entry.url }}"{% if entry.url == page.url %} aria-current="page"{% endif %}>{{ entry.title }}</a></li>
+				{%- endfor %}
+			</ul>
+		</nav>
+
+		<!-- This page `{{ page.url }}` was built on {% currentBuildDate %} -->
+		<script type="module" src="{% getBundleFileUrl "js" %}"></script>
+	</body>
+</html>
