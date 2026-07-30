@@ -1,3 +1,25 @@
+/*
+ * 98.css is inlined directly into a style tag, so its @font-face
+ * url(ms_sans_serif.woff) - a relative path meant to be resolved
+ * against the package's own dist folder - instead resolves against
+ * this page's URL and 404s. Re-declare the same family/weight with
+ * absolute paths so it wins the cascade and the pixel font actually
+ * loads instead of silently falling back to Arial everywhere.
+ */
+@font-face {
+	font-family: "Pixelated MS Sans Serif";
+	font-style: normal;
+	font-weight: 400;
+	src: url("/fonts/ms_sans_serif.woff2") format("woff2"), url("/fonts/ms_sans_serif.woff") format("woff");
+}
+
+@font-face {
+	font-family: "Pixelated MS Sans Serif";
+	font-style: normal;
+	font-weight: 700;
+	src: url("/fonts/ms_sans_serif_bold.woff2") format("woff2"), url("/fonts/ms_sans_serif_bold.woff") format("woff");
+}
+
 /* Defaults */
 :root {
 	--font-family: Arial, sans-serif;
@@ -138,6 +160,151 @@ body.desktop {
 .title-bar-controls button {
 	min-height: 18px;
 	min-width: 20px;
+}
+
+.title-bar-text {
+	cursor: url("/img/flamesword.png") 4 1, pointer;
+}
+
+/* Draggable floating windows */
+.floating-window {
+	position: fixed;
+	margin: 0;
+	z-index: 500;
+	min-width: min(560px, 94vw);
+	min-height: 360px;
+	max-height: 90vh;
+	touch-action: none;
+}
+
+.floating-window .title-bar {
+	cursor: url("/img/flamesword.png") 4 1, move;
+	user-select: none;
+	touch-action: none;
+}
+
+/* Window minimize/close/restore effects */
+@keyframes window-minimize {
+	from {
+		transform: scale(1) translateY(0);
+		opacity: 1;
+	}
+
+	to {
+		transform: scale(0.05) translateY(60vh);
+		opacity: 0;
+	}
+}
+
+@keyframes window-restore {
+	from {
+		transform: scale(0.05) translateY(60vh);
+		opacity: 0;
+	}
+
+	to {
+		transform: scale(1) translateY(0);
+		opacity: 1;
+	}
+}
+
+.site-window.is-minimizing {
+	animation: window-minimize 220ms ease-in forwards;
+}
+
+.site-window.is-restoring {
+	animation: window-restore 220ms ease-out forwards;
+}
+
+.site-window.is-hidden {
+	display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.site-window.is-minimizing,
+	.site-window.is-restoring {
+		animation-duration: 1ms;
+	}
+}
+
+/* Taskbar "window" button that appears while a window without its own nav
+   entry (e.g. a blog post) is minimized */
+.taskbar__item--window {
+	flex: 0 1 auto;
+	min-width: 0;
+	max-width: 12rem;
+}
+
+.taskbar__link--window {
+	appearance: none;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	border: none;
+	font-family: inherit;
+	font-size: 1rem;
+	box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey;
+}
+
+/* Taskbar system tray: background-task icons + clock, grouped in one
+   recessed strip like the Windows 98 notification area */
+.taskbar__tray {
+	flex: 0 0 auto;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.5rem;
+	min-height: 26px;
+	padding: 0 0.6rem;
+	box-shadow: inset -1px -1px #fff, inset 1px 1px grey, inset -2px -2px #dfdfdf, inset 2px 2px #0a0a0a;
+}
+
+.taskbar__tray-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 18px;
+	height: 18px;
+	line-height: 1;
+	font-size: 0.9rem;
+	text-decoration: none;
+	filter: grayscale(0.2);
+}
+
+.taskbar__tray-icon:hover {
+	filter: none;
+}
+
+.taskbar__tray-icon--rss {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' rx='3' fill='%23f26522'/%3E%3Ccircle cx='4.5' cy='11.5' r='2' fill='%23fff'/%3E%3Cpath d='M2.5 7.5a6 6 0 0 1 6 6h-2.6a3.4 3.4 0 0 0-3.4-3.4z' fill='%23fff'/%3E%3Cpath d='M2.5 3a10.5 10.5 0 0 1 10.5 10.5h-2.7a7.8 7.8 0 0 0-7.8-7.8z' fill='%23fff'/%3E%3C/svg%3E");
+	background-size: contain;
+	background-repeat: no-repeat;
+	background-position: center;
+}
+
+.taskbar__clock {
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+
+/* Subtle CRT scanline + vignette overlay across the whole desktop */
+body.desktop::after {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: 999;
+	pointer-events: none;
+	background-image:
+		repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.08) 0, rgba(0, 0, 0, 0.08) 1px, transparent 1px, transparent 3px),
+		radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.25) 100%);
+	mix-blend-mode: multiply;
+	opacity: 0.35;
+}
+
+@media (max-width: 640px) {
+	body.desktop::after {
+		opacity: 0.2;
+	}
 }
 
 .window-content {
@@ -298,8 +465,37 @@ heading-anchors {
 	outline-offset: -4px;
 }
 
-.taskbar__link[aria-current="page"] {
+.taskbar__link[aria-current="page"],
+.taskbar__link.is-open {
 	box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey;
+}
+
+/* Small flat-shaded Win98-style app icons instead of emoji */
+.taskbar__link-icon {
+	display: inline-block;
+	width: 16px;
+	height: 16px;
+	margin-right: 0.35rem;
+	vertical-align: -3px;
+	background-repeat: no-repeat;
+	background-size: contain;
+	image-rendering: pixelated;
+}
+
+.taskbar__link-icon--home {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpolygon points='1,7 8,1 15,7' fill='%23800000' stroke='%23000' stroke-width='1'/%3E%3Crect x='3' y='7' width='10' height='7' fill='%23c0c0c0' stroke='%23000' stroke-width='1'/%3E%3Crect x='7' y='9' width='3' height='5' fill='%23000080'/%3E%3C/svg%3E");
+}
+
+.taskbar__link-icon--blog {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='3' y='1' width='10' height='14' fill='%23fff' stroke='%23000' stroke-width='1'/%3E%3Crect x='5' y='4' width='6' height='1.5' fill='%23000080'/%3E%3Crect x='5' y='7.5' width='6' height='1.5' fill='%23000080'/%3E%3Crect x='5' y='11' width='4' height='1.5' fill='%23000080'/%3E%3C/svg%3E");
+}
+
+.taskbar__link-icon--about {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M2 15c0-4.5 2.7-7 6-7s6 2.5 6 7z' fill='%23008080' stroke='%23000' stroke-width='1'/%3E%3Ccircle cx='8' cy='5' r='3.2' fill='%23ffd28a' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E");
+}
+
+.taskbar__link-icon--window {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='2' width='14' height='12' fill='%23c0c0c0' stroke='%23000' stroke-width='1'/%3E%3Crect x='1' y='2' width='14' height='3.5' fill='%23000080'/%3E%3C/svg%3E");
 }
 
 @media (max-width: 960px) {

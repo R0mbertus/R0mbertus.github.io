@@ -1,0 +1,303 @@
+// Turns the server-rendered page into a draggable "window" and lets the
+// taskbar/nav links open additional pages as their own floating windows
+// (fetched in the background) instead of navigating away, so several
+// pages can be open and moved around at once - like a real desktop.
+(() => {
+	const desktopShell = document.querySelector(".desktop-shell");
+	const desktopBanner = document.querySelector(".desktop-banner");
+	const taskbar = document.querySelector(".taskbar");
+	const initialWindow = document.querySelector(".site-window");
+	const taskbarItems = document.querySelector(".taskbar__items");
+	const windowTemplate = document.getElementById("window-template");
+	const clock = document.getElementById("taskbar-clock");
+
+	if (!desktopShell || !initialWindow || !taskbarItems || !windowTemplate) return;
+
+	// Windows that correspond to a real taskbar nav link (Home/Blog/About/...)
+	// fold their minimized state into that same button, matching real Windows
+	// 98 behaviour. Windows without one (e.g. a single blog post) fall back to
+	// a throwaway taskbar entry that's created on minimize and removed on close/restore.
+	const navLinksById = new Map();
+	document.querySelectorAll(".taskbar__link[href]").forEach((link) => {
+		navLinksById.set(normalizeId(link.href), link);
+		// The server renders aria-current="page" for whichever page this is,
+		// which paints the same "pressed" look our own is-open class uses.
+		// Once JS is driving, is-open is the only source of truth for that
+		// look, otherwise closing the current page's own window can't
+		// visually un-press its taskbar button (aria-current is still there).
+		link.removeAttribute("aria-current");
+	});
+
+	const openWindows = new Map(); // id -> window element
+	let topZIndex = 500;
+	let cascadeStep = 0;
+
+	function normalizeId(href) {
+		try {
+			return new URL(href, location.href).pathname;
+		} catch {
+			return href;
+		}
+	}
+
+	function bringToFront(win) {
+		topZIndex += 1;
+		win.style.zIndex = String(topZIndex);
+	}
+
+	function isTopmost(win) {
+		return !win.classList.contains("is-hidden") && Number(win.style.zIndex) === topZIndex;
+	}
+
+	function setLinkOpen(link, isOpen) {
+		if (!link) return;
+		link.classList.toggle("is-open", isOpen);
+	}
+
+	// Keeps windows below the logo and above the taskbar regardless of
+	// viewport size, and centers new windows in that space.
+	function getDesktopBounds() {
+		const bannerBottom = desktopBanner ? desktopBanner.getBoundingClientRect().bottom : 0;
+		const taskbarTop = taskbar ? taskbar.getBoundingClientRect().top : window.innerHeight;
+		return {
+			top: Math.max(16, bannerBottom + 16),
+			bottom: Math.max(16, taskbarTop - 16),
+		};
+	}
+
+	function positionWindow(win, index) {
+		const bounds = getDesktopBounds();
+		// Let the window grow as tall as the actual available desktop space
+		// (between the logo and the taskbar) instead of a fixed vh cap, so it
+		// only scrolls internally once it truly can't get any bigger.
+		win.style.maxHeight = `${Math.max(240, bounds.bottom - bounds.top)}px`;
+		const rect = win.getBoundingClientRect();
+		const offset = index * 26;
+
+		let left = (window.innerWidth - rect.width) / 2 + offset;
+		let top = bounds.top + Math.max(0, (bounds.bottom - bounds.top - rect.height) / 2) + offset;
+
+		left = Math.min(Math.max(left, 8), Math.max(8, window.innerWidth - rect.width - 8));
+		top = Math.min(Math.max(top, bounds.top), Math.max(bounds.top, bounds.bottom - rect.height));
+
+		win.style.left = `${Math.round(left)}px`;
+		win.style.top = `${Math.round(top)}px`;
+	}
+
+	function minimizeWindow(id) {
+		const win = openWindows.get(id);
+		if (!win) return;
+
+		win.classList.add("is-minimizing");
+		win.addEventListener("animationend", () => {
+			win.classList.remove("is-minimizing");
+			win.classList.add("is-hidden");
+		}, { once: true });
+
+		const link = navLinksById.get(id);
+		if (!link) {
+			const item = document.createElement("li");
+			item.className = "taskbar__item taskbar__item--window";
+			const button = document.createElement("button");
+			button.type = "button";
+			button.className = "taskbar__link taskbar__link--window is-open";
+			button.textContent = win.querySelector(".title-bar-text").textContent;
+			button.addEventListener("click", () => restoreWindow(id));
+			item.append(button);
+			taskbarItems.append(item);
+			win._taskbarItem = item;
+		}
+	}
+
+	function restoreWindow(id) {
+		const win = openWindows.get(id);
+		if (!win) return;
+
+		if (win._taskbarItem) {
+			win._taskbarItem.remove();
+			win._taskbarItem = null;
+		}
+		win.classList.remove("is-hidden");
+		win.classList.add("is-restoring");
+		win.addEventListener("animationend", () => {
+			win.classList.remove("is-restoring");
+		}, { once: true });
+		bringToFront(win);
+	}
+
+	function closeWindow(id) {
+		const win = openWindows.get(id);
+		if (!win) return;
+
+		win.classList.add("is-minimizing");
+		win.addEventListener("animationend", () => {
+			if (win._taskbarItem) win._taskbarItem.remove();
+			win.remove();
+			openWindows.delete(id);
+		}, { once: true });
+		setLinkOpen(navLinksById.get(id), false);
+	}
+
+	function makeDraggable(win) {
+		const titleBar = win.querySelector(".title-bar");
+
+		titleBar.addEventListener("pointerdown", (event) => {
+			if (event.button !== 0 || event.target.closest(".title-bar-controls")) return;
+			event.preventDefault();
+			bringToFront(win);
+
+			const startX = event.clientX;
+			const startY = event.clientY;
+			const startLeft = win.offsetLeft;
+			const startTop = win.offsetTop;
+			titleBar.setPointerCapture(event.pointerId);
+
+			function onMove(moveEvent) {
+				const maxLeft = Math.max(0, window.innerWidth - win.offsetWidth);
+				const maxTop = Math.max(0, window.innerHeight - 60);
+				const nextLeft = startLeft + (moveEvent.clientX - startX);
+				const nextTop = startTop + (moveEvent.clientY - startY);
+				win.style.left = `${Math.min(Math.max(nextLeft, 0), maxLeft)}px`;
+				win.style.top = `${Math.min(Math.max(nextTop, 0), maxTop)}px`;
+			}
+
+			function onUp(upEvent) {
+				titleBar.removeEventListener("pointermove", onMove);
+				titleBar.releasePointerCapture(upEvent.pointerId);
+			}
+
+			titleBar.addEventListener("pointermove", onMove);
+			titleBar.addEventListener("pointerup", onUp, { once: true });
+		});
+	}
+
+	function wireWindow(win, id) {
+		win.querySelector('[aria-label="Minimize"]').addEventListener("click", () => minimizeWindow(id));
+		win.querySelector('[aria-label="Close"]').addEventListener("click", () => closeWindow(id));
+		win.addEventListener("pointerdown", () => bringToFront(win));
+		makeDraggable(win);
+	}
+
+	function hydrateInitialWindow() {
+		const id = normalizeId(location.pathname);
+		initialWindow.classList.add("floating-window");
+		wireWindow(initialWindow, id);
+		positionWindow(initialWindow, 0);
+		bringToFront(initialWindow);
+		openWindows.set(id, initialWindow);
+		setLinkOpen(navLinksById.get(id), true);
+	}
+
+	async function fetchWindowContent(url) {
+		const response = await fetch(url);
+		const contentType = response.headers.get("content-type") || "";
+		if (!response.ok || !contentType.includes("html")) throw new Error("Not an HTML page");
+		const doc = new DOMParser().parseFromString(await response.text(), "text/html");
+		const contentPanel = doc.querySelector(".content-panel");
+		if (!contentPanel) throw new Error("No content panel found");
+		return {
+			title: doc.getElementById("win-title")?.textContent || doc.title,
+			html: contentPanel.innerHTML,
+		};
+	}
+
+	async function openWindow(url, fallbackTitle) {
+		const id = normalizeId(url);
+
+		let page;
+		try {
+			page = await fetchWindowContent(url);
+		} catch {
+			location.href = url;
+			return;
+		}
+
+		const fragment = windowTemplate.content.cloneNode(true);
+		const win = fragment.querySelector(".floating-window");
+		win.querySelector(".title-bar-text").textContent = page.title || fallbackTitle || "";
+		win.querySelector(".content-panel").innerHTML = page.html;
+		win.style.width = "min(760px, 94vw)";
+
+		desktopShell.after(win);
+		wireWindow(win, id);
+		cascadeStep = (cascadeStep + 1) % 6;
+		positionWindow(win, cascadeStep);
+		bringToFront(win);
+		openWindows.set(id, win);
+		setLinkOpen(navLinksById.get(id), true);
+	}
+
+	// Start button / logo: just open or focus the target, no minimize toggle.
+	function openOrFocus(url, fallbackTitle) {
+		const id = normalizeId(url);
+		const existing = openWindows.get(id);
+		if (!existing) {
+			openWindow(url, fallbackTitle);
+			return;
+		}
+		if (existing.classList.contains("is-hidden")) {
+			restoreWindow(id);
+		} else {
+			bringToFront(existing);
+		}
+	}
+
+	// Taskbar nav links double as the running-window buttons: click to open,
+	// click again to minimize the focused window, click a minimized/background
+	// one to restore/focus it - same toggle behaviour as the real shell.
+	function handleNavToggle(link) {
+		const id = normalizeId(link.href);
+		const existing = openWindows.get(id);
+		if (!existing) {
+			openWindow(link.href, link.dataset.title || link.textContent.trim());
+			return;
+		}
+		if (existing.classList.contains("is-hidden")) {
+			restoreWindow(id);
+		} else if (isTopmost(existing)) {
+			minimizeWindow(id);
+		} else {
+			bringToFront(existing);
+		}
+	}
+
+	function isPlainClick(event) {
+		return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+	}
+
+	document.querySelectorAll(".taskbar__link[href]").forEach((link) => {
+		link.addEventListener("click", (event) => {
+			if (!isPlainClick(event)) return;
+			event.preventDefault();
+			handleNavToggle(link);
+		});
+	});
+
+	document.querySelectorAll(".taskbar__start, .desktop-banner__logo").forEach((link) => {
+		link.addEventListener("click", (event) => {
+			if (!isPlainClick(event)) return;
+			const href = link.getAttribute("href");
+			if (!href || href.startsWith("#")) return;
+			event.preventDefault();
+			openOrFocus(link.href, link.textContent.trim());
+		});
+	});
+
+	function updateClock() {
+		if (!clock) return;
+		clock.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+	}
+
+	// Keep the available-height cap honest if the viewport is resized.
+	window.addEventListener("resize", () => {
+		const bounds = getDesktopBounds();
+		const maxHeight = `${Math.max(240, bounds.bottom - bounds.top)}px`;
+		openWindows.forEach((win) => {
+			win.style.maxHeight = maxHeight;
+		});
+	});
+
+	hydrateInitialWindow();
+	updateClock();
+	setInterval(updateClock, 15000);
+})();

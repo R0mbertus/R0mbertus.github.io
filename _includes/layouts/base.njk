@@ -33,16 +33,15 @@
 		<div class="desktop-shell">
 			<header class="desktop-banner">
 				<a href="/" class="desktop-banner__logo">
-					<img src="{{ '/img/big-logo.gif' | url | replace('/content/', '/') }}" alt="{{ metadata.title }} logo" loading="lazy" decoding="async">
+					<img src="{{ '/img/big-logo.gif' | url | replace('/content/', '/') }}" alt="{{ metadata.title }} logo" width="490" height="83" loading="lazy" decoding="async">
 				</a>
 			</header>
 
 			<div class="window site-window">
 				<div class="title-bar">
-					<div class="title-bar-text">{{ title or metadata.title }}</div>
+					<div class="title-bar-text" id="win-title">{{ title or metadata.title }}</div>
 					<div class="title-bar-controls">
 						<button type="button" aria-label="Minimize"></button>
-						<button type="button" aria-label="Maximize" disabled></button>
 						<button type="button" aria-label="Close"></button>
 					</div>
 				</div>
@@ -66,16 +65,49 @@
 		</div>
 
 		{#- Taskbar navigation mimics the Windows 98 shell #}
+		{%- set navEntries = collections.all | eleventyNavigation %}
+		{%- set navIconClasses = {"Home": "taskbar__link-icon--home", "Blog": "taskbar__link-icon--blog", "About": "taskbar__link-icon--about"} %}
 		<nav class="taskbar" aria-label="Taskbar">
 			<a href="/" class="taskbar__start">Start</a>
 			<ul class="taskbar__items">
-				{%- for entry in collections.all | eleventyNavigation %}
-					<li class="taskbar__item"><a class="taskbar__link" href="{{ entry.url }}"{% if entry.url == page.url %} aria-current="page"{% endif %}>{{ entry.title }}</a></li>
+				{%- for entry in navEntries %}
+					{%- if entry.key != "Feed" %}
+						<li class="taskbar__item"><a class="taskbar__link" href="{{ entry.url }}" data-title="{{ entry.title }}"{% if entry.url == page.url %} aria-current="page"{% endif %}><span class="taskbar__link-icon {{ navIconClasses[entry.key] or 'taskbar__link-icon--window' }}" aria-hidden="true"></span>{{ entry.title }}</a></li>
+					{%- endif %}
 				{%- endfor %}
 			</ul>
+			<div class="taskbar__tray">
+				{%- for entry in navEntries %}
+					{%- if entry.key == "Feed" %}
+						<a class="taskbar__tray-icon taskbar__tray-icon--rss" href="{{ entry.url }}" title="{{ entry.title }}" aria-label="{{ entry.title }}"></a>
+					{%- endif %}
+				{%- endfor %}
+				<span class="taskbar__clock" id="taskbar-clock" aria-hidden="true"></span>
+			</div>
 		</nav>
 
+		<template id="window-template">
+			<div class="window site-window floating-window">
+				<div class="title-bar">
+					<div class="title-bar-text"></div>
+					<div class="title-bar-controls">
+						<button type="button" aria-label="Minimize"></button>
+						<button type="button" aria-label="Close"></button>
+					</div>
+				</div>
+				<div class="window-body">
+					<main class="window-content">
+						<div class="sunken-panel content-panel"></div>
+					</main>
+				</div>
+				<footer class="status-bar" role="contentinfo">
+					<p class="status-bar-field"><em>Built with <a href="https://www.11ty.dev/">{{ eleventy.generator }}</a></em></p>
+				</footer>
+			</div>
+		</template>
+
 		<!-- This page `{{ page.url }}` was built on {% currentBuildDate %} -->
+		<script type="module">{% include "js/desktop.js" %}</script>
 		<script type="module" src="{% getBundleFileUrl "js" %}"></script>
 	</body>
 </html>
