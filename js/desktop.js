@@ -10,21 +10,25 @@
 	const taskbarItems = document.querySelector(".taskbar__items");
 	const windowTemplate = document.getElementById("window-template");
 	const clock = document.getElementById("taskbar-clock");
+	const startWrap = document.querySelector(".taskbar__start-wrap");
+	const startButton = document.querySelector(".taskbar__start");
+	const startMenu = document.querySelector(".taskbar__start-menu");
 
 	if (!desktopShell || !initialWindow || !taskbarItems || !windowTemplate) return;
 
-	// Windows that correspond to a real taskbar nav link (Home/Blog/About/...)
-	// fold their minimized state into that same button, matching real Windows
-	// 98 behaviour. Windows without one (e.g. a single blog post) fall back to
-	// a throwaway taskbar entry that's created on minimize and removed on close/restore.
-	const navLinksById = new Map();
-	document.querySelectorAll(".taskbar__link[href]").forEach((link) => {
-		navLinksById.set(normalizeId(link.href), link);
+	// The Start menu is just a launcher (open/focus, like the real Windows
+	// Start menu) - it never reflects minimized state. Every *open* window,
+	// whether launched from there or from a link inside a page, instead gets
+	// its own entry in .taskbar__items for the lifetime it stays open, same
+	// as real running-program buttons.
+	const startMenuLinksById = new Map();
+	document.querySelectorAll(".taskbar__start-menu-link[href]").forEach((link) => {
+		startMenuLinksById.set(normalizeId(link.href), link);
 		// The server renders aria-current="page" for whichever page this is,
 		// which paints the same "pressed" look our own is-open class uses.
 		// Once JS is driving, is-open is the only source of truth for that
 		// look, otherwise closing the current page's own window can't
-		// visually un-press its taskbar button (aria-current is still there).
+		// visually un-press its Start menu entry (aria-current is still there).
 		link.removeAttribute("aria-current");
 	});
 
@@ -43,6 +47,7 @@
 	function bringToFront(win) {
 		topZIndex += 1;
 		win.style.zIndex = String(topZIndex);
+		updateTaskbarActiveStates();
 	}
 
 	function isTopmost(win) {
@@ -52,6 +57,15 @@
 	function setLinkOpen(link, isOpen) {
 		if (!link) return;
 		link.classList.toggle("is-open", isOpen);
+	}
+
+	// The taskbar button for whichever window is focused gets the "pressed"
+	// look; every other running window's button looks unpressed, same as
+	// the real Windows 98 taskbar.
+	function updateTaskbarActiveStates() {
+		openWindows.forEach((win) => {
+			if (win._taskbarButton) win._taskbarButton.classList.toggle("is-open", isTopmost(win));
+		});
 	}
 
 	// Keeps windows below the logo and above the taskbar regardless of
@@ -84,6 +98,45 @@
 		win.style.top = `${Math.round(top)}px`;
 	}
 
+	// Windows for a page with its own Start menu entry (Home/Blog/About) reuse
+	// that entry's icon; anything else (e.g. a single blog post) falls back
+	// to the generic window icon.
+	function getIconClass(id) {
+		const icon = startMenuLinksById.get(id)?.querySelector(".taskbar__link-icon");
+		const specific = icon && [...icon.classList].find((c) => c !== "taskbar__link-icon");
+		return specific || "taskbar__link-icon--window";
+	}
+
+	// Creates the running-window button in .taskbar__items for a freshly
+	// opened window. It stays put (surviving minimize/restore) until the
+	// window is closed. The strip is nowrap + overflow:hidden in CSS, so on
+	// a cramped screen extra buttons simply have no room to show rather than
+	// wrapping the taskbar onto a second line.
+	function createTaskbarItem(win, id, title) {
+		const item = document.createElement("li");
+		item.className = "taskbar__item taskbar__item--window";
+		const button = document.createElement("button");
+		button.type = "button";
+		button.className = "taskbar__link taskbar__link--window";
+		const icon = document.createElement("span");
+		icon.className = `taskbar__link-icon ${getIconClass(id)}`;
+		icon.setAttribute("aria-hidden", "true");
+		button.append(icon, document.createTextNode(title));
+		button.addEventListener("click", () => {
+			if (win.classList.contains("is-hidden")) {
+				restoreWindow(id);
+			} else if (isTopmost(win)) {
+				minimizeWindow(id);
+			} else {
+				bringToFront(win);
+			}
+		});
+		item.append(button);
+		taskbarItems.append(item);
+		win._taskbarItem = item;
+		win._taskbarButton = button;
+	}
+
 	function minimizeWindow(id) {
 		const win = openWindows.get(id);
 		if (!win) return;
@@ -92,31 +145,14 @@
 		win.addEventListener("animationend", () => {
 			win.classList.remove("is-minimizing");
 			win.classList.add("is-hidden");
+			updateTaskbarActiveStates();
 		}, { once: true });
-
-		const link = navLinksById.get(id);
-		if (!link) {
-			const item = document.createElement("li");
-			item.className = "taskbar__item taskbar__item--window";
-			const button = document.createElement("button");
-			button.type = "button";
-			button.className = "taskbar__link taskbar__link--window is-open";
-			button.textContent = win.querySelector(".title-bar-text").textContent;
-			button.addEventListener("click", () => restoreWindow(id));
-			item.append(button);
-			taskbarItems.append(item);
-			win._taskbarItem = item;
-		}
 	}
 
 	function restoreWindow(id) {
 		const win = openWindows.get(id);
 		if (!win) return;
 
-		if (win._taskbarItem) {
-			win._taskbarItem.remove();
-			win._taskbarItem = null;
-		}
 		win.classList.remove("is-hidden");
 		win.classList.add("is-restoring");
 		win.addEventListener("animationend", () => {
@@ -135,7 +171,7 @@
 			win.remove();
 			openWindows.delete(id);
 		}, { once: true });
-		setLinkOpen(navLinksById.get(id), false);
+		setLinkOpen(startMenuLinksById.get(id), false);
 	}
 
 	function makeDraggable(win) {
@@ -183,9 +219,10 @@
 		initialWindow.classList.add("floating-window");
 		wireWindow(initialWindow, id);
 		positionWindow(initialWindow, 0);
-		bringToFront(initialWindow);
 		openWindows.set(id, initialWindow);
-		setLinkOpen(navLinksById.get(id), true);
+		createTaskbarItem(initialWindow, id, initialWindow.querySelector(".title-bar-text").textContent);
+		bringToFront(initialWindow);
+		setLinkOpen(startMenuLinksById.get(id), true);
 	}
 
 	async function fetchWindowContent(url) {
@@ -222,12 +259,14 @@
 		wireWindow(win, id);
 		cascadeStep = (cascadeStep + 1) % 6;
 		positionWindow(win, cascadeStep);
-		bringToFront(win);
 		openWindows.set(id, win);
-		setLinkOpen(navLinksById.get(id), true);
+		createTaskbarItem(win, id, page.title || fallbackTitle || "");
+		bringToFront(win);
+		setLinkOpen(startMenuLinksById.get(id), true);
 	}
 
-	// Start button / logo: just open or focus the target, no minimize toggle.
+	// Start menu entries / logo: just open or focus the target, like a real
+	// Start menu launcher - minimizing/restoring is the taskbar button's job.
 	function openOrFocus(url, fallbackTitle) {
 		const id = normalizeId(url);
 		const existing = openWindows.get(id);
@@ -242,60 +281,101 @@
 		}
 	}
 
-	// Taskbar nav links double as the running-window buttons: click to open,
-	// click again to minimize the focused window, click a minimized/background
-	// one to restore/focus it - same toggle behaviour as the real shell.
-	function handleNavToggle(link) {
-		const id = normalizeId(link.href);
-		const existing = openWindows.get(id);
-		if (!existing) {
-			openWindow(link.href, link.dataset.title || link.textContent.trim());
-			return;
-		}
-		if (existing.classList.contains("is-hidden")) {
-			restoreWindow(id);
-		} else if (isTopmost(existing)) {
-			minimizeWindow(id);
-		} else {
-			bringToFront(existing);
-		}
-	}
-
 	function isPlainClick(event) {
 		return event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
 	}
 
-	document.querySelectorAll(".taskbar__link[href]").forEach((link) => {
-		link.addEventListener("click", (event) => {
+	function setStartMenuOpen(isOpen) {
+		if (!startMenu || !startButton) return;
+		startMenu.hidden = !isOpen;
+		startButton.setAttribute("aria-expanded", String(isOpen));
+		startButton.classList.toggle("is-open", isOpen);
+	}
+
+	if (startButton && startMenu && startWrap) {
+		startButton.addEventListener("click", (event) => {
 			if (!isPlainClick(event)) return;
-			event.preventDefault();
-			handleNavToggle(link);
+			setStartMenuOpen(startMenu.hidden);
 		});
+
+		document.querySelectorAll(".taskbar__start-menu-link[href]").forEach((link) => {
+			link.addEventListener("click", (event) => {
+				if (!isPlainClick(event)) return;
+				event.preventDefault();
+				setStartMenuOpen(false);
+				openOrFocus(link.href, link.dataset.title || link.textContent.trim());
+			});
+		});
+
+		document.addEventListener("click", (event) => {
+			if (!startMenu.hidden && !startWrap.contains(event.target)) setStartMenuOpen(false);
+		});
+
+		document.addEventListener("keydown", (event) => {
+			if (event.key === "Escape" && !startMenu.hidden) setStartMenuOpen(false);
+		});
+	}
+
+	// Same-site links *inside* window content (blog post list, tags,
+	// next/prev, in-post links, ...) would otherwise be plain <a> navigations
+	// that reload the page and wipe out every open window. Route them through
+	// the same open-a-floating-window path as the taskbar/Start menu instead.
+	document.addEventListener("click", (event) => {
+		if (!isPlainClick(event)) return;
+		const link = event.target.closest("a[href]");
+		if (!link || !link.closest(".content-panel")) return;
+		if (link.target && link.target !== "_self") return;
+		if (link.hasAttribute("download")) return;
+
+		const href = link.getAttribute("href");
+		if (!href || href.startsWith("#") || href.startsWith("mailto:") || href.startsWith("tel:")) return;
+
+		let url;
+		try {
+			url = new URL(href, location.href);
+		} catch {
+			return;
+		}
+		if (url.origin !== location.origin) return;
+
+		event.preventDefault();
+		openOrFocus(url.href, link.textContent.trim());
 	});
 
-	document.querySelectorAll(".taskbar__start, .desktop-banner__logo").forEach((link) => {
-		link.addEventListener("click", (event) => {
+	const logoLink = document.querySelector(".desktop-banner__logo");
+	if (logoLink) {
+		logoLink.addEventListener("click", (event) => {
 			if (!isPlainClick(event)) return;
-			const href = link.getAttribute("href");
+			const href = logoLink.getAttribute("href");
 			if (!href || href.startsWith("#")) return;
 			event.preventDefault();
-			openOrFocus(link.href, link.textContent.trim());
+			openOrFocus(logoLink.href, logoLink.textContent.trim());
 		});
-	});
+	}
 
 	function updateClock() {
 		if (!clock) return;
-		clock.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+		clock.textContent = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
 	}
 
-	// Keep the available-height cap honest if the viewport is resized.
-	window.addEventListener("resize", () => {
+	// Keep the available-height cap honest, and pull any window back on
+	// screen, whenever the viewport changes size - including a mobile
+	// browser's address bar showing/hiding, which resizes the viewport
+	// without the user touching a window.
+	function clampWindowsToViewport() {
 		const bounds = getDesktopBounds();
 		const maxHeight = `${Math.max(240, bounds.bottom - bounds.top)}px`;
 		openWindows.forEach((win) => {
 			win.style.maxHeight = maxHeight;
+			const maxLeft = Math.max(8, window.innerWidth - win.offsetWidth - 8);
+			const maxTop = Math.max(bounds.top, bounds.bottom - win.offsetHeight);
+			win.style.left = `${Math.min(Math.max(win.offsetLeft, 8), maxLeft)}px`;
+			win.style.top = `${Math.min(Math.max(win.offsetTop, bounds.top), maxTop)}px`;
 		});
-	});
+	}
+
+	window.addEventListener("resize", clampWindowsToViewport);
+	if (window.visualViewport) window.visualViewport.addEventListener("resize", clampWindowsToViewport);
 
 	hydrateInitialWindow();
 	updateClock();

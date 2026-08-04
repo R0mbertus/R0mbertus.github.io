@@ -68,14 +68,17 @@
 		{%- set navEntries = collections.all | eleventyNavigation %}
 		{%- set navIconClasses = {"Home": "taskbar__link-icon--home", "Blog": "taskbar__link-icon--blog", "About": "taskbar__link-icon--about"} %}
 		<nav class="taskbar" aria-label="Taskbar">
-			<a href="/" class="taskbar__start">Start</a>
-			<ul class="taskbar__items">
-				{%- for entry in navEntries %}
-					{%- if entry.key != "Feed" %}
-						<li class="taskbar__item"><a class="taskbar__link" href="{{ entry.url }}" data-title="{{ entry.title }}"{% if entry.url == page.url %} aria-current="page"{% endif %}><span class="taskbar__link-icon {{ navIconClasses[entry.key] or 'taskbar__link-icon--window' }}" aria-hidden="true"></span>{{ entry.title }}</a></li>
-					{%- endif %}
-				{%- endfor %}
-			</ul>
+			<div class="taskbar__start-wrap">
+				<button type="button" class="taskbar__start" aria-haspopup="true" aria-expanded="false">Start</button>
+				<ul class="taskbar__start-menu" hidden>
+					{%- for entry in navEntries %}
+						{%- if entry.key != "Feed" %}
+							<li><a class="taskbar__start-menu-link" href="{{ entry.url }}" data-title="{{ entry.title }}"{% if entry.url == page.url %} aria-current="page"{% endif %}><span class="taskbar__link-icon {{ navIconClasses[entry.key] or 'taskbar__link-icon--window' }}" aria-hidden="true"></span>{{ entry.title }}</a></li>
+						{%- endif %}
+					{%- endfor %}
+				</ul>
+			</div>
+			<ul class="taskbar__items"></ul>
 			<div class="taskbar__tray">
 				{%- for entry in navEntries %}
 					{%- if entry.key == "Feed" %}
