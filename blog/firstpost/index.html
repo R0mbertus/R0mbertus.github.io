@@ -6,7 +6,7 @@
 		<title>Welcome!</title>
 		<meta name="description" content="Hiiii hello hello">
 		<link rel="alternate" href="/feed/feed.xml" type="application/atom+xml" title="Rombertus">
-		<link rel="icon" href="/img/r-icon.gif" type="image/gif">
+		<link rel="icon" href="/static/img/r-icon.gif" type="image/gif">
 
 		
 		
@@ -24,14 +24,14 @@
 	font-family: "Pixelated MS Sans Serif";
 	font-style: normal;
 	font-weight: 400;
-	src: url("/fonts/ms_sans_serif.woff2") format("woff2"), url("/fonts/ms_sans_serif.woff") format("woff");
+	src: url("/static/fonts/ms_sans_serif.woff2") format("woff2"), url("/static/fonts/ms_sans_serif.woff") format("woff");
 }
 
 @font-face {
 	font-family: "Pixelated MS Sans Serif";
 	font-style: normal;
 	font-weight: 700;
-	src: url("/fonts/ms_sans_serif_bold.woff2") format("woff2"), url("/fonts/ms_sans_serif_bold.woff") format("woff");
+	src: url("/static/fonts/ms_sans_serif_bold.woff2") format("woff2"), url("/static/fonts/ms_sans_serif_bold.woff") format("woff");
 }
 
 /* Defaults */
@@ -40,8 +40,8 @@
 	--font-family-monospace: "Lucida Console", Monaco, Andale Mono WT, Andale Mono, "Lucida Console", "Lucida Sans Typewriter", "DejaVu Sans Mono", "Bitstream Vera Sans Mono", "Liberation Mono", "Nimbus Mono L", "Courier New", Courier, monospace;
 	--desktop-background: #008080;
 	--window-background: silver;
-	--window-max-width: 960px;
-	--content-gutter: 1.5rem;
+	--window-max-width: 720px;
+	--content-gutter: 0.5rem;
 	--taskbar-height: 2.75rem;
 	--color-gray-20: #dfdfdf;
 	--color-gray-50: #c0c7c8;
@@ -65,7 +65,7 @@
 }
 
 html {
-	font-size: 112.5%;
+	/* font-size: 112.5%; */
 	overflow-y: auto;
 }
 
@@ -75,7 +75,7 @@ body {
 	color: var(--text-color);
 	font-family: var(--font-family);
 	background-color: var(--background-color);
-	cursor: url("/img/flamesword.png") 4 1, auto;
+	cursor: url("/static/img/flamesword.png") 4 1, auto;
 }
 
 body.desktop {
@@ -86,7 +86,7 @@ body.desktop {
 	align-items: stretch;
 	padding: 0;
 	gap: 0;
-	background-image: url("/img/background.gif");
+	background-image: url("/static/img/background.gif");
 	background-repeat: repeat;
 	background-size: auto;
 	overscroll-behavior-y: none;
@@ -180,7 +180,7 @@ body.desktop {
 }
 
 .title-bar-text {
-	cursor: url("/img/flamesword.png") 4 1, pointer;
+	cursor: url("/static/img/flamesword.png") 4 1, pointer;
 }
 
 /* Draggable floating windows */
@@ -196,7 +196,7 @@ body.desktop {
 }
 
 .floating-window .title-bar {
-	cursor: url("/img/flamesword.png") 4 1, move;
+	cursor: url("/static/img/flamesword.png") 4 1, move;
 	user-select: none;
 	touch-action: none;
 }
@@ -392,8 +392,46 @@ heading-anchors {
 	font-size: 1rem;
 }
 
-.site-window .status-bar {
-	margin: 0;
+/* 88x31 button collection: the site's own button stands alone up top, then
+   the rest of the collection sits in a 2-column grid with a gap between */
+.button-solo {
+	display: flex;
+	justify-content: center;
+	margin: 1rem 0 0;
+}
+
+.button-solo img {
+	image-rendering: pixelated;
+	border: 1px solid #000;
+}
+
+.content-panel .button-section-heading {
+	font-size: 1.05rem;
+	font-weight: 700;
+	margin: 1.5rem 0 0;
+	text-align: center;
+}
+
+.button-grid {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 0.5rem;
+	list-style: none;
+	padding: 0;
+	margin: 0.5rem auto 0;
+	max-width: 184px;
+}
+
+.button-grid li {
+	line-height: 0;
+}
+
+.button-grid img {
+	width: 88px;
+	height: 31px;
+	image-rendering: pixelated;
+	border: 1px solid #000;
 }
 
 .taskbar {
@@ -443,7 +481,7 @@ heading-anchors {
 	content: "";
 	width: 18px;
 	height: 18px;
-	background: url("/img/r-icon.gif") center/contain no-repeat;
+	background: url("/static/img/r-icon.gif") center/contain no-repeat;
 	image-rendering: pixelated;
 }
 
@@ -578,6 +616,10 @@ heading-anchors {
 	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='2' width='14' height='12' fill='%23c0c0c0' stroke='%23000' stroke-width='1'/%3E%3Crect x='1' y='2' width='14' height='3.5' fill='%23000080'/%3E%3C/svg%3E");
 }
 
+.taskbar__link-icon--buttons {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='3' width='14' height='4' fill='%23800080' stroke='%23000' stroke-width='1'/%3E%3Crect x='1' y='9' width='14' height='4' fill='%23008080' stroke='%23000' stroke-width='1'/%3E%3C/svg%3E");
+}
+
 @media (max-width: 960px) {
 	.desktop-shell {
 		padding: 1.25rem 1rem 0.5rem;
@@ -599,7 +641,7 @@ heading-anchors {
 
 @media (max-width: 640px) {
 	:root {
-		--content-gutter: 1rem;
+		--content-gutter: 0.4rem;
 	}
 
 	.desktop-shell {
@@ -668,7 +710,7 @@ li {
 
 a[href] {
 	color: var(--text-color-link);
-	cursor: url("/img/flamesword.png") 4 1, pointer;
+	cursor: url("/static/img/flamesword.png") 4 1, pointer;
 }
 
 a[href]:visited {
@@ -684,7 +726,7 @@ button,
 input,
 select,
 textarea {
-	cursor: url("/img/flamesword.png") 4 1, pointer;
+	cursor: url("/static/img/flamesword.png") 4 1, pointer;
 }
 
 input[type="text"],
@@ -695,7 +737,7 @@ input[type="password"],
 input[type="tel"],
 input[type="url"],
 textarea {
-	cursor: url("/img/flamesword.png") 4 1, text;
+	cursor: url("/static/img/flamesword.png") 4 1, text;
 }
 
 #skip-link {
@@ -1023,7 +1065,7 @@ pre[class*="language-diff-"] {
 		<div class="desktop-shell">
 			<header class="desktop-banner">
 				<a href="/" class="desktop-banner__logo">
-					<img src="/img/big-logo.gif" alt="Rombertus logo" width="490" height="83" loading="lazy" decoding="async">
+					<img src="/static/img/big-logo.gif" alt="Rombertus logo" width="490" height="83" loading="lazy" decoding="async">
 				</a>
 			</header>
 
@@ -1057,12 +1099,6 @@ pre[class*="language-diff-"] {
 						</div>
 					</main>
 				</div>
-
-				<footer class="status-bar" role="contentinfo">
-					<p class="status-bar-field">
-						<em>Built with <a href="https://www.11ty.dev/">Eleventy v3.1.2</a></em>
-					</p>
-				</footer>
 			</div>
 		</div>
 		<nav class="taskbar" aria-label="Taskbar">
@@ -1072,6 +1108,7 @@ pre[class*="language-diff-"] {
 							<li><a class="taskbar__start-menu-link" href="/" data-title="Home"><span class="taskbar__link-icon taskbar__link-icon--home" aria-hidden="true"></span>Home</a></li>
 							<li><a class="taskbar__start-menu-link" href="/blog/" data-title="Blog"><span class="taskbar__link-icon taskbar__link-icon--blog" aria-hidden="true"></span>Blog</a></li>
 							<li><a class="taskbar__start-menu-link" href="/about/" data-title="About"><span class="taskbar__link-icon taskbar__link-icon--about" aria-hidden="true"></span>About</a></li>
+							<li><a class="taskbar__start-menu-link" href="/buttons/" data-title="Buttons"><span class="taskbar__link-icon taskbar__link-icon--buttons" aria-hidden="true"></span>Buttons</a></li>
 				</ul>
 			</div>
 			<ul class="taskbar__items"></ul>
@@ -1095,14 +1132,11 @@ pre[class*="language-diff-"] {
 						<div class="sunken-panel content-panel"></div>
 					</main>
 				</div>
-				<footer class="status-bar" role="contentinfo">
-					<p class="status-bar-field"><em>Built with <a href="https://www.11ty.dev/">Eleventy v3.1.2</a></em></p>
-				</footer>
 			</div>
 		</template>
 
-		<!-- This page `/blog/firstpost/` was built on 2026-08-04T20:24:55.969Z -->
+		<!-- This page `/blog/firstpost/` was built on 2026-08-04T22:49:31.008Z -->
 		
-		<script type="module" src="/dist/-2nozALQgh.js"></script>
+		<script type="module" src="/dist/fDAEaeiwCQ.js"></script>
 	</body>
 </html>

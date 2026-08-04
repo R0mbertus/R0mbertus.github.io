@@ -329,6 +329,35 @@ export { HeadingAnchors }
 		win.style.top = `${Math.round(top)}px`;
 	}
 
+	// Docks a narrow companion window (e.g. the buttons auto-open) hanging a
+	// little over the right edge of another window and slightly lower than
+	// its top, instead of the centered cascade - like it was just dropped
+	// there, not neatly tiled beside it. Falls back to the left edge if
+	// there's no room on the right.
+	const sideWindowOverlap = 48;
+	const sideWindowDownOffset = 64;
+
+	function positionSideWindow(win, anchor) {
+		const bounds = getDesktopBounds();
+		win.style.maxHeight = `${Math.max(240, bounds.bottom - bounds.top)}px`;
+		const anchorRect = anchor.getBoundingClientRect();
+		const rect = win.getBoundingClientRect();
+
+		// A little jitter so it doesn't look perfectly mechanical.
+		const jitterX = Math.round((Math.random() - 0.5) * 16);
+		const jitterY = Math.round((Math.random() - 0.5) * 20);
+
+		let left = anchorRect.right - sideWindowOverlap + jitterX;
+		if (left + rect.width > window.innerWidth - 8) {
+			left = anchorRect.left - sideWindowOverlap - rect.width + jitterX;
+		}
+		left = Math.min(Math.max(left, 8), Math.max(8, window.innerWidth - rect.width - 8));
+		const top = Math.min(Math.max(anchorRect.top + sideWindowDownOffset + jitterY, bounds.top), Math.max(bounds.top, bounds.bottom - rect.height));
+
+		win.style.left = `${Math.round(left)}px`;
+		win.style.top = `${Math.round(top)}px`;
+	}
+
 	// Windows for a page with its own Start menu entry (Home/Blog/About) reuse
 	// that entry's icon; anything else (e.g. a single blog post) falls back
 	// to the generic window icon.
@@ -469,7 +498,7 @@ export { HeadingAnchors }
 		};
 	}
 
-	async function openWindow(url, fallbackTitle) {
+	async function openWindow(url, fallbackTitle, { side = false, sideAnchor = null } = {}) {
 		const id = normalizeId(url);
 
 		let page;
@@ -484,12 +513,25 @@ export { HeadingAnchors }
 		const win = fragment.querySelector(".floating-window");
 		win.querySelector(".title-bar-text").textContent = page.title || fallbackTitle || "";
 		win.querySelector(".content-panel").innerHTML = page.html;
-		win.style.width = "min(760px, 94vw)";
+
+		if (side) {
+			// Narrower than the .floating-window stylesheet min-width, since
+			// this is a companion window docked beside the main one, not a
+			// full page - inline styles win over the class rule.
+			win.style.minWidth = "0";
+			win.style.width = "min(260px, 90vw)";
+		} else {
+			win.style.width = "min(720px, 90vw)";
+		}
 
 		desktopShell.after(win);
 		wireWindow(win, id);
-		cascadeStep = (cascadeStep + 1) % 6;
-		positionWindow(win, cascadeStep);
+		if (side) {
+			positionSideWindow(win, sideAnchor || initialWindow);
+		} else {
+			cascadeStep = (cascadeStep + 1) % 6;
+			positionWindow(win, cascadeStep);
+		}
 		openWindows.set(id, win);
 		createTaskbarItem(win, id, page.title || fallbackTitle || "");
 		bringToFront(win);
@@ -608,7 +650,30 @@ export { HeadingAnchors }
 	window.addEventListener("resize", clampWindowsToViewport);
 	if (window.visualViewport) window.visualViewport.addEventListener("resize", clampWindowsToViewport);
 
+	// Auto-opens the buttons page docked next to the main
+	// window, but only when it isn't already the page being visited and
+	// there's actually room beside the main window (either side) for it.
+	const buttonsPageId = "/buttons/";
+	const buttonsCompanionWidth = 260;
+
+	function maybeOpenButtonsCompanion() {
+		const currentId = normalizeId(location.pathname);
+		if (currentId === buttonsPageId) return;
+		if (openWindows.has(buttonsPageId)) return;
+
+		const anchorRect = initialWindow.getBoundingClientRect();
+		const neededRoom = buttonsCompanionWidth - sideWindowOverlap;
+		const roomRight = window.innerWidth - anchorRect.right;
+		const roomLeft = anchorRect.left;
+		if (Math.max(roomRight, roomLeft) < neededRoom) return;
+
+		// openWindow() already brings the companion to front last, so it ends
+		// up on top of the main window, like it was just dropped there.
+		openWindow(buttonsPageId, "Buttons", { side: true, sideAnchor: initialWindow });
+	}
+
 	hydrateInitialWindow();
+	maybeOpenButtonsCompanion();
 	updateClock();
 	setInterval(updateClock, 15000);
 })();
