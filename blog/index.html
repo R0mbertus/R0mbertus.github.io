@@ -65,7 +65,8 @@
 }
 
 html {
-	overflow-y: scroll;
+	font-size: 112.5%;
+	overflow-y: auto;
 }
 
 body {
@@ -81,12 +82,14 @@ body.desktop {
 	display: flex;
 	flex-direction: column;
 	min-height: 100vh;
+	min-height: 100dvh;
 	align-items: stretch;
 	padding: 0;
 	gap: 0;
 	background-image: url("/img/background.gif");
 	background-repeat: repeat;
 	background-size: auto;
+	overscroll-behavior-y: none;
 }
 
 .desktop-shell {
@@ -188,6 +191,7 @@ body.desktop {
 	min-width: min(560px, 94vw);
 	min-height: 360px;
 	max-height: 90vh;
+	max-height: 90dvh;
 	touch-action: none;
 }
 
@@ -301,12 +305,15 @@ body.desktop {
 	white-space: nowrap;
 }
 
-/* Subtle CRT scanline + vignette overlay across the whole desktop */
+/* Subtle CRT scanline + vignette overlay across the whole desktop. Sits
+   above the taskbar too (see .taskbar) so the effect stays consistent
+   across the whole screen; pointer-events: none keeps it from blocking
+   clicks on whatever's underneath. */
 body.desktop::after {
 	content: "";
 	position: fixed;
 	inset: 0;
-	z-index: 999;
+	z-index: 5001;
 	pointer-events: none;
 	background-image:
 		repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.08) 0, rgba(0, 0, 0, 0.08) 1px, transparent 1px, transparent 3px),
@@ -400,20 +407,32 @@ heading-anchors {
 	min-height: var(--taskbar-height);
 	position: sticky;
 	bottom: 0;
-	z-index: 10;
+	/* Comfortably above the floating windows' z-index range (500+, one bump
+	   per focus) so a window can never be dragged/focused over the taskbar -
+	   it should only ever go under it, same as a real Windows taskbar. */
+	z-index: 5000;
 	font-family: "Pixelated MS Sans Serif", Arial, sans-serif;
 }
 
+.taskbar__start-wrap {
+	position: relative;
+	flex: 0 0 auto;
+}
+
 .taskbar__start {
+	appearance: none;
 	display: inline-flex;
 	align-items: center;
 	gap: 0.6rem;
 	padding: 0 1rem 0 0.75rem;
 	min-height: 30px;
+	font-family: inherit;
+	font-size: 1rem;
 	font-weight: 700;
 	font-style: italic;
 	letter-spacing: 0.25px;
 	text-decoration: none;
+	border: none;
 	color: #000;
 	background-color: #c0c0c0;
 	box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf;
@@ -437,11 +456,58 @@ heading-anchors {
 	outline-offset: -4px;
 }
 
+.taskbar__start.is-open {
+	box-shadow: inset -1px -1px #fff, inset 1px 1px #0a0a0a, inset -2px -2px #dfdfdf, inset 2px 2px grey;
+}
+
+/* Start menu popup: mirrors the Windows 98 raised-panel look, anchored
+   just above the Start button so it never gets pushed off screen. */
+.taskbar__start-menu {
+	position: absolute;
+	left: 0;
+	bottom: calc(100% + 0.35rem);
+	z-index: 20;
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-width: 12rem;
+	margin: 0;
+	padding: 0.3rem;
+	list-style: none;
+	background-color: var(--window-background);
+	box-shadow: inset -1px -1px #0a0a0a, inset 1px 1px #fff, inset -2px -2px grey, inset 2px 2px #dfdfdf;
+}
+
+.taskbar__start-menu[hidden] {
+	display: none;
+}
+
+.taskbar__start-menu-link {
+	display: flex;
+	align-items: center;
+	padding: 0.4rem 0.6rem;
+	text-decoration: none;
+	color: #000;
+	white-space: nowrap;
+	font-size: 1rem;
+}
+
+.taskbar__start-menu-link:hover,
+.taskbar__start-menu-link:focus-visible {
+	background-color: navy;
+	color: #fff;
+}
+
+.taskbar__start-menu-link.is-open {
+	font-weight: 700;
+}
+
 .taskbar__items {
 	flex: 1;
 	display: flex;
 	align-items: center;
-	flex-wrap: wrap;
+	flex-wrap: nowrap;
+	overflow: hidden;
 	gap: 0.5rem;
 	margin: 0;
 	margin-left: 0.5rem;
@@ -541,14 +607,12 @@ heading-anchors {
 	}
 
 	.taskbar {
-		flex-wrap: wrap;
 		gap: 0.5rem;
 		padding: 0.25rem 0.5rem;
 	}
 
-	.taskbar__items {
-		flex: 1 0 100%;
-		margin-left: 0;
+	.taskbar__start-menu {
+		min-width: 10rem;
 	}
 }
 
@@ -832,12 +896,15 @@ code {
 			</div>
 		</div>
 		<nav class="taskbar" aria-label="Taskbar">
-			<a href="/" class="taskbar__start">Start</a>
-			<ul class="taskbar__items">
-						<li class="taskbar__item"><a class="taskbar__link" href="/" data-title="Home"><span class="taskbar__link-icon taskbar__link-icon--home" aria-hidden="true"></span>Home</a></li>
-						<li class="taskbar__item"><a class="taskbar__link" href="/blog/" data-title="Blog" aria-current="page"><span class="taskbar__link-icon taskbar__link-icon--blog" aria-hidden="true"></span>Blog</a></li>
-						<li class="taskbar__item"><a class="taskbar__link" href="/about/" data-title="About"><span class="taskbar__link-icon taskbar__link-icon--about" aria-hidden="true"></span>About</a></li>
-			</ul>
+			<div class="taskbar__start-wrap">
+				<button type="button" class="taskbar__start" aria-haspopup="true" aria-expanded="false">Start</button>
+				<ul class="taskbar__start-menu" hidden="">
+							<li><a class="taskbar__start-menu-link" href="/" data-title="Home"><span class="taskbar__link-icon taskbar__link-icon--home" aria-hidden="true"></span>Home</a></li>
+							<li><a class="taskbar__start-menu-link" href="/blog/" data-title="Blog" aria-current="page"><span class="taskbar__link-icon taskbar__link-icon--blog" aria-hidden="true"></span>Blog</a></li>
+							<li><a class="taskbar__start-menu-link" href="/about/" data-title="About"><span class="taskbar__link-icon taskbar__link-icon--about" aria-hidden="true"></span>About</a></li>
+				</ul>
+			</div>
+			<ul class="taskbar__items"></ul>
 			<div class="taskbar__tray">
 						<a class="taskbar__tray-icon taskbar__tray-icon--rss" href="/feed/feed.xml" title="Feed" aria-label="Feed"></a>
 				<span class="taskbar__clock" id="taskbar-clock" aria-hidden="true"></span>
@@ -864,8 +931,8 @@ code {
 			</div>
 		</template>
 
-		<!-- This page `/blog/` was built on 2026-07-30T09:35:06.729Z -->
+		<!-- This page `/blog/` was built on 2026-08-04T20:24:55.967Z -->
 		
-		<script type="module" src="/dist/NhrJczLxB0.js"></script>
+		<script type="module" src="/dist/-2nozALQgh.js"></script>
 	</body>
 </html>
