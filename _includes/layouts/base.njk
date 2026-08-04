@@ -6,7 +6,7 @@
 		<title>{{ title or metadata.title }}</title>
 		<meta name="description" content="{{ description or metadata.description }}">
 		<link rel="alternate" href="/feed/feed.xml" type="application/atom+xml" title="{{ metadata.title }}">
-		<link rel="icon" href="{{ '/img/r-icon.gif' | url | replace('/content/', '/') }}" type="image/gif">
+		<link rel="icon" href="{{ '/static/img/r-icon.gif' | url | replace('/content/', '/') }}" type="image/gif">
 
 		{#- Uncomment this if you’d like folks to know that you used Eleventy to build your site!  #}
 		{#- <meta name="generator" content="{{ eleventy.generator }}"> #}
@@ -33,7 +33,7 @@
 		<div class="desktop-shell">
 			<header class="desktop-banner">
 				<a href="/" class="desktop-banner__logo">
-					<img src="{{ '/img/big-logo.gif' | url | replace('/content/', '/') }}" alt="{{ metadata.title }} logo" width="490" height="83" loading="lazy" decoding="async">
+					<img src="{{ '/static/img/big-logo.gif' | url | replace('/content/', '/') }}" alt="{{ metadata.title }} logo" width="490" height="83" loading="lazy" decoding="async">
 				</a>
 			</header>
 
@@ -55,18 +55,12 @@
 						</div>
 					</main>
 				</div>
-
-				<footer class="status-bar" role="contentinfo">
-					<p class="status-bar-field">
-						<em>Built with <a href="https://www.11ty.dev/">{{ eleventy.generator }}</a></em>
-					</p>
-				</footer>
 			</div>
 		</div>
 
 		{#- Taskbar navigation mimics the Windows 98 shell #}
 		{%- set navEntries = collections.all | eleventyNavigation %}
-		{%- set navIconClasses = {"Home": "taskbar__link-icon--home", "Blog": "taskbar__link-icon--blog", "About": "taskbar__link-icon--about"} %}
+		{%- set navIconClasses = {"Home": "taskbar__link-icon--home", "Blog": "taskbar__link-icon--blog", "About": "taskbar__link-icon--about", "Buttons": "taskbar__link-icon--buttons"} %}
 		<nav class="taskbar" aria-label="Taskbar">
 			<div class="taskbar__start-wrap">
 				<button type="button" class="taskbar__start" aria-haspopup="true" aria-expanded="false">Start</button>
@@ -103,9 +97,6 @@
 						<div class="sunken-panel content-panel"></div>
 					</main>
 				</div>
-				<footer class="status-bar" role="contentinfo">
-					<p class="status-bar-field"><em>Built with <a href="https://www.11ty.dev/">{{ eleventy.generator }}</a></em></p>
-				</footer>
 			</div>
 		</template>
 
