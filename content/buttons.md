@@ -16,6 +16,7 @@ const title = "Buttons"
 
 <ul class="button-grid">
 	<li><a href="https://mira.quest/"><img src="https://mira.quest/static/button.png" width="88" height="31" alt="mira.quest" loading="lazy" decoding="async"></a></li>
+	<li><a href="https://abigail.sh/"><img src="https://abigail.sh/static/images/button.png" width="88" height="31" alt="abigail.sh" loading="lazy" decoding="async"></a></li>
 	<!--
 		Each button is exactly 88x31px. Add one per <li>, e.g.:
 		<li><a href="https://example.com"><img src="/static/img/88x31/example.gif" width="88" height="31" alt="Example site" loading="lazy" decoding="async"></a></li>
